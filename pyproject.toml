@@ -1,0 +1,35 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "donorshift-bench"
+version = "0.1.0"
+description = "Leakage-aware leave-one-donor-out cell-type classification benchmark for single-cell counts"
+readme = "README.md"
+requires-python = ">=3.10"
+license = {file = "LICENSE"}
+authors = [{name="DonorShift-Bench contributors"}]
+keywords = ["single-cell", "scRNA-seq", "donor-shift", "bioinformatics", "benchmark", "machine-learning"]
+dependencies = ["numpy>=1.24,<3", "scipy>=1.10", "pandas>=2.0", "scikit-learn>=1.3", "matplotlib>=3.7"]
+
+[project.optional-dependencies]
+h5ad = ["anndata>=0.10"]
+transformer = ["torch>=2.1"]
+dev = ["pytest>=7.4", "build>=1.0", "ruff>=0.6"]
+
+[project.scripts]
+donorshift = "donorshift.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra"
+
+[tool.ruff]
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E4", "E7", "E9", "F", "B"]

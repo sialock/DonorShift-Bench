@@ -1,0 +1,82 @@
+{
+  "schema_version": "1",
+  "project": "DonorShift-Bench",
+  "version": "0.1.0",
+  "generated_utc": "2026-10-31T03:31:29.812540+00:00",
+  "input_file": "synthetic_sc_counts.csv",
+  "input_sha256": "24c43f8387690d58e4d83bc22bd2fcdb565fdf9db17f99de34303821701b5edf",
+  "synthetic_demo": true,
+  "n_cells": 384,
+  "n_genes": 64,
+  "n_donors": 8,
+  "n_classes": 4,
+  "donors": [
+    "D01",
+    "D02",
+    "D03",
+    "D04",
+    "D05",
+    "D06",
+    "D07",
+    "D08"
+  ],
+  "classes": [
+    "B_cell",
+    "CD4_T",
+    "Epithelial",
+    "Myeloid"
+  ],
+  "models": {
+    "logreg": {
+      "n_donors": 8,
+      "n_test_predictions": 384,
+      "mean_donor_accuracy": 0.6145833333333334,
+      "std_donor_accuracy": 0.0855363563285709,
+      "worst_donor_accuracy": 0.5,
+      "mean_donor_macro_f1_present": 0.6224497630703418,
+      "pooled_cell_accuracy": 0.6145833333333334,
+      "bootstrap_95pct_interval_mean_donor_accuracy": [
+        0.5625,
+        0.671875
+      ]
+    },
+    "random_forest": {
+      "n_donors": 8,
+      "n_test_predictions": 384,
+      "mean_donor_accuracy": 0.7135416666666666,
+      "std_donor_accuracy": 0.16805596549864735,
+      "worst_donor_accuracy": 0.5,
+      "mean_donor_macro_f1_present": 0.7186472765504723,
+      "pooled_cell_accuracy": 0.7135416666666666,
+      "bootstrap_95pct_interval_mean_donor_accuracy": [
+        0.609375,
+        0.8203125
+      ]
+    },
+    "mlp": {
+      "n_donors": 8,
+      "n_test_predictions": 384,
+      "mean_donor_accuracy": 0.5234375,
+      "std_donor_accuracy": 0.10992280615728504,
+      "worst_donor_accuracy": 0.3541666666666667,
+      "mean_donor_macro_f1_present": 0.5276511580499346,
+      "pooled_cell_accuracy": 0.5234375,
+      "bootstrap_95pct_interval_mean_donor_accuracy": [
+        0.45052083333333337,
+        0.5860026041666666
+      ]
+    }
+  },
+  "evaluation": "leave-one-donor-out",
+  "preprocessing": "per-fold train-only dispersion HVG, total-count/10k log1p",
+  "model_hyperparameters": "Fixed; see src/donorshift/models.py; not tuned on held-out donors",
+  "confidence_note": "Maximum predicted class probability; uncalibrated, not clinical confidence",
+  "bootstrap_note": "Donor-cluster percentile bootstrap across held-out donor accuracies; descriptive",
+  "limitations": [
+    "Synthetic demo is not a scientific benchmark",
+    "Single held-out donor folds do not establish prospective clinical validity",
+    "Macro F1 uses cell types present in each test donor",
+    "Prediction confidence is uncalibrated",
+    "HVG heuristic is not Seurat or Scanpy batch-aware HVG"
+  ]
+}

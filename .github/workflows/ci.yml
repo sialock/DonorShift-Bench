@@ -1,0 +1,22 @@
+name: Tests
+on:
+  push:
+  pull_request:
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.10", "3.11", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+      - run: python -m pip install --upgrade pip
+      - run: python -m pip install -e '.[dev]'
+      - run: python -m pytest -q
+      - run: python -m build
+      - run: donorshift make-demo --output /tmp/synthetic_sc_counts.csv --donors 4 --cells-per-donor 16 --genes 32
+      - run: donorshift run --input /tmp/synthetic_sc_counts.csv --output /tmp/donor_result --models logreg --top-genes 16 --bootstrap 100
