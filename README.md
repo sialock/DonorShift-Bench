@@ -1,141 +1,137 @@
 # DonorShift-Bench
 
-**Reproducible, leakage-aware benchmarking for single-cell cell-type classification on unseen donors.**
+When you're working with single-cell data from several patients, the train/test split matters. A classifier might perform well on cells from patients it has already encountered and struggle when the next sample comes from someone new.
 
-DonorShift-Bench evaluates classification algorithms using *leave-one-donor-out* (LODO) validation, performs feature selection **only inside the training portion of each fold**, and produces a self-contained HTML report and downloadable benchmark tables.
+DonorShift-Bench makes it easy to check both situations. It trains cell-type classifiers using raw scRNA-seq counts, keeps gene selection inside the training split, and saves the predictions and per-donor results so you can see where a model works and where it doesn't.
 
-> **Scientific status:** v0.1 is a tested research-software MVP. The bundled demonstration is **100% synthetic**, not a published tumor dataset. It does **not** reproduce any unpublished breast cancer experiment or establish clinical validity.
+## Two ways to evaluate a model
 
-![Donor-held-out score example](assets/demo_donor_accuracy.png)
+**Leave-one-donor-out (LODO):** train on all but one donor, test on the donor left out, and repeat for every donor. Use this when the question is whether a classifier can handle a *new patient*.
 
-## Why it matters
+**Within-donor cell split:** split cells separately within each donor, with the same donors allowed in both training and test sets. The `compare` command repeats this split with different seeds. This answers a different question: how well does the model classify held-out cells from *donors already represented in training*?
 
-Random cell-level train/test splits can put cells from the *same patient* into both sets. This tests within-donor recognition and may overstate performance on new patients. Here, every test cell belongs to a donor excluded from its model's training data and all gene selection.
+In both cases, the code chooses genes using training cells only. Donor overlap is intentional in the second protocol, not an accidental data leak. The comparison report makes that difference explicit.
 
-```mermaid
-flowchart LR
-    A[Raw counts + donor and cell-type labels] --> B[Leave one donor out]
-    B --> C[Training donors only]
-    B --> D[Unseen test donor]
-    C --> E[Training-only gene detection and HVG]
-    E --> F[Normalize + train model]
-    D --> G[Apply same normalization and selected genes]
-    F --> H[Prediction]
-    G --> H
-    H --> I[Per-donor and per-class metrics]
-    I --> J[Offline HTML report + CSV + JSON]
-```
+## Install
 
-## Install and run in under 2 minutes
-
-Python 3.10+:
+Python 3.10 or newer is required.
 
 ```bash
+git clone https://github.com/sialock/DonorShift-Bench.git
+cd DonorShift-Bench
 python -m pip install -e .
-donorshift make-demo --output examples/data/synthetic_sc_counts.csv
-donorshift validate --input examples/data/synthetic_sc_counts.csv
-donorshift run --input examples/data/synthetic_sc_counts.csv \
-  --output results/demo --models logreg random_forest --top-genes 48
 ```
 
-Open `results/demo/report.html` in a web browser. **No network or credentials are required** after installing dependencies. The example uses synthetic 8-donor counts with artificial cell-type markers.
-
-### Real scRNA-seq input
-
-CSV columns: `cell_id` (optional), `donor_id`, `cell_type`, followed by one column per gene with **raw, nonnegative, integer-like counts**.
-
-```text
-cell_id,donor_id,cell_type,CD3D,MS4A1,LYZ, EPCAM
-...
-```
-
-For sparse AnnData `.h5ad`, install `python -m pip install -e '.[h5ad]'`. The input `.obs` must include donor and label columns, with gene names in `.var_names`:
-
-```bash
-donorshift run --input input.h5ad --counts-layer counts \
-  --donor-col patient_id --label-col manual_celltype \
-  --output results/patient_benchmark --models logreg random_forest mlp \
-  --top-genes 3000
-```
-
-If raw counts are already in `.X`, omit `--counts-layer`. **Never supply log-normalized expression**: preprocessing expects raw counts. `.h5ad` is loaded in memory; for large cohorts, allocate sufficient RAM or pre-filter cells and genes in a **scientifically justified and leakage-safe** manner. If global preprocessing needs to be fit to data (e.g., HVG selection), do it *within each training fold*, not before this benchmark.
-
-### Optional lightweight transformer
-
-```bash
-python -m pip install -e '.[transformer]'
-donorshift run --input examples/data/synthetic_sc_counts.csv \
-  --output results/transformer --models logreg transformer \
-  --top-genes 32 --transformer-epochs 10
-```
-
-This is a compact, **randomly initialized** gene-token attention model, not a pretrained single-cell foundation model or a faithful recreation of a particular paper architecture. Its hyperparameters and training epochs are fixed, and it uses no held-out donor information for tuning. The transformer is resource intensive for large HVG sets. `logreg` and `random_forest` are the default baselines.
-
-## Reproducible synthetic demonstration (not biological evidence)
-
-A fixed 8-donor / 384-cell / 64-gene simulation (seed 7) was run with 48 train-selected genes per fold (seed 42, no hyperparameter search). These scores are **illustrations of the report**, not research conclusions:
-
-| Baseline | Mean held-out donor accuracy | Worst held-out donor accuracy | Mean donor macro F1 |
-|---|---:|---:|---:|
-| Logistic regression | 0.615 | 0.500 | 0.622 |
-| Random forest | **0.714** | 0.500 | **0.719** |
-| MLP | 0.523 | 0.354 | 0.528 |
-
-The MLP can emit non-convergence warnings at its fixed iteration budget; those warnings should be treated as diagnostic information. Synthetic data are deliberately imperfect; model ranking here **must not** be generalized to real tumors. The optional transformer was smoke-tested separately and is intentionally omitted from this default comparison.
-
-The checked-in files under `examples/results/demo/` include the full, offline HTML report, plots and fold manifests.
-
-## Outputs
-
-| File | Description |
-|---|---|
-| `report.html` | Portable offline benchmark report with embedded visualizations |
-| `summary.json` | Equal-donor mean accuracy, worst-donor result, pooled accuracy, mean test-present macro F1 and donor-cluster bootstrap intervals |
-| `per_donor_metrics.csv` | Accuracy, macro F1 and balanced accuracy for each model and donor |
-| `per_class_metrics.csv` | Precision, recall, F1 and support for each test-present cell type, with unseen-training-class indicator |
-| `predictions.csv` | Held-out predictions and *uncalibrated* prediction confidence |
-| `fold_manifest.json` | Training/test donor isolation, per-fold training cell counts, selected genes, train class distribution |
-| `run_config.json` | Reproducibility settings and package versions |
-| `donor_accuracy.png` | Per-donor grouped bar plot |
-| `class_recall.png` | Support-weighted per-class recall heatmap |
-
-## Scientific guardrails
-
-1. **Donor isolation:** outer holdout is by donor ID, never random cells.
-2. **Fit within training only:** minimum detected-cell filter, HVG rank and model fitting use training donors only. Independently normalized test cells use the training-selected gene indices.
-3. **No held-out model tuning:** algorithm settings are fixed in `src/donorshift/models.py`; never pick a winner by repeatedly tuning on outer donors. For tuned comparisons, implement nested donor-grouped validation.
-4. **Class absence:** `test_only_classes` flags classes completely absent from training. Such predictions are inherently unsupported, rather than quietly excluding these classes.
-5. **Metric definition:** per-donor macro F1 averages across classes *present in that test donor*. Pooled accuracy weights donors with more cells more strongly; average donor accuracy weights each donor equally.
-6. **Bootstrap scope:** interval is a descriptive percentile bootstrap of donors, not a calibrated uncertainty estimate or prospective validation.
-7. **Transparency:** the HVG score is a simple dispersion heuristic (variance divided by mean after log-normalization), **not** the Seurat/Scanpy batch-aware HVG method. No batch correction, doublet removal or label harmonization is performed.
-8. **Biological limits:** synthetic datasets are for functional tests, not proof of generalization. Complex cohorts require a documented label ontology, donor metadata quality audit, batch and tissue-shift sensitivity analysis, and external cohort testing.
-9. **Privacy:** do not commit patient-identifying metadata, controlled-access counts, or unlicensed datasets to public GitHub repositories.
-
-## Reproducibility / engineering
+To run the tests:
 
 ```bash
 python -m pip install -e '.[dev]'
 python -m pytest -q
-python -m build
 ```
 
-GitHub Actions CI runs tests on Python 3.10–3.12 and a small CLI smoke test. Core features work without GPU. Source layout follows the `src/` packaging convention and has no notebook-only execution dependency.
+## Try the split comparison
 
-## Project structure
+There's a small **synthetic** dataset in `examples/data/`, so you can run the project without downloading patient data.
+
+```bash
+donorshift compare \
+  --input examples/data/synthetic_sc_counts.csv \
+  --output results/comparison \
+  --models logreg random_forest \
+  --top-genes 48 \
+  --test-fraction 0.2 \
+  --random-repeats 3 \
+  --dataset-kind synthetic
+```
+
+Open `results/comparison/comparison_report.html` in your browser. It works offline and shows both protocols side by side.
+
+![Example comparison on synthetic data](examples/results/comparison_demo/comparison.png)
+
+On the bundled synthetic example (8 donors, 384 cells, 64 genes, seed 42), I get:
+
+| Model | Leave-one-donor-out | Within-donor split |
+| --- | ---: | ---: |
+| Logistic regression | 0.615 | 0.517 |
+| Random forest | 0.714 | 0.608 |
+
+These values are **equal-donor mean accuracies**. The within-donor number averages three seeded splits. The runs use the same fixed model settings, but they do **not** have the same training-set size or test distribution: the average LODO training set has 336 cells, versus 304 in the cell-split experiments.
+
+The cell split is actually *lower* in this example. That's fine. A random split doesn't have to give a larger score, and a gap between these two protocols is not a direct measurement of how much donor information a model has learned. This dataset is artificial; the table is only a demonstration of the software.
+
+## Running on your own data
+
+Use a CSV with one row per cell. It needs a donor ID, a cell-type label, and at least two columns of **raw, nonnegative integer counts**.
 
 ```text
-src/donorshift/  # input validation, train-only transforms, baselines, metrics, reports, CLI
-examples/data/   # synthetic counts only
-examples/results/demo/  # frozen, reproducible example result tables and charts
-tests/          # regression, data integrity, sparse/dense, no-leakage and CLI tests
-.github/workflows/ci.yml
+cell_id,donor_id,cell_type,CD3D,MS4A1,LYZ,EPCAM
+cell_001,patient_01,CD4_T,8,0,1,0
+...
 ```
 
-## Publication roadmap (not yet implemented)
+For an annotated `.h5ad` file, install the optional reader:
 
-- Grouped nested cross-validation and model calibration
-- Domain-shift decomposition by assay/therapy/subtype with appropriately de-identified metadata
-- Efficient out-of-core support for million-cell cohorts
-- External public-dataset benchmark and comparison to established cell-label-transfer methods
+```bash
+python -m pip install -e '.[h5ad]'
 
-**License:** MIT. This is research software; not for clinical decision making.
+donorshift validate --input cohort.h5ad \
+  --donor-col patient_id --label-col cell_type --counts-layer counts
+
+donorshift compare --input cohort.h5ad \
+  --donor-col patient_id --label-col cell_type --counts-layer counts \
+  --models logreg random_forest \
+  --top-genes 3000 --random-repeats 3 \
+  --dataset-kind public --accession GSE176078 \
+  --output results/public_cohort
+```
+
+These commands assume that your `.h5ad` contains a **raw-count** layer called `counts` and verified `patient_id` and `cell_type` columns. Change the names to match your file. The tool does not download the dataset or create cell-type annotations for you. It loads the matrix into memory, so a large cohort needs enough RAM.
+
+GSE176078 is one possible public breast-cancer dataset, but it isn't included here. See [the dataset notes](docs/PUBLIC_DATA.md) for its sources and the checks needed before using it. No real-patient results have been generated or claimed for this release.
+
+## What gets saved
+
+After `donorshift compare`, the output folder contains:
+
+| File | Contents |
+| --- | --- |
+| `comparison.csv` | Main scores from both protocols, one row per model |
+| `comparison_report.html` | Offline report with the comparison plot |
+| `comparison.png` | The plot used in the report |
+| `random_split_metrics.csv` | One row per model and random split |
+| `random_per_donor_metrics.csv` | Accuracy, macro F1 and balanced accuracy for each donor in each random split |
+| `random_per_class_metrics.csv` | Per-class precision, recall and F1 |
+| `random_predictions.csv` | Predictions for the held-out cells in each random split |
+| `random_split_manifest.json` | Seeds, donor overlap, selected genes, split sizes and cell-ID fingerprints |
+| `cohort_audit.csv` | Cell counts by donor and annotated cell type |
+| `comparison_summary.json` | Dataset provenance, settings and result summary |
+| `donor_held_out/` | The complete LODO output, including its own report and fold manifest |
+
+For just the original donor-held-out benchmark, `donorshift run` still works:
+
+```bash
+donorshift run --input examples/data/synthetic_sc_counts.csv \
+  --output results/lodo --models logreg random_forest --top-genes 48
+```
+
+## Models and how to read the numbers
+
+The package has logistic regression, random forest and MLP baselines, plus an optional small Transformer (`pip install -e '.[transformer]'`). These are deliberately simple baselines. The Transformer is trained from scratch; it isn't a pretrained single-cell foundation model.
+
+Each model uses fixed hyperparameters. The code does not tune them against the held-out donor. The feature selection step uses a straightforward dispersion score after library-size normalization and `log1p`, **not** Scanpy's batch-aware or Seurat's HVG procedure.
+
+Scores are reported per donor because a pooled accuracy can hide poor performance on a smaller patient sample. Random-split repetitions can test some of the same cells more than once, so those repetitions shouldn't be treated as independent test cohorts. The difference between the two protocols is descriptive: changes in donor representation, training-set size, class balance and biology can all contribute.
+
+For a research study, check the annotation quality, donor identity, class coverage and upstream preprocessing before drawing conclusions. Batch correction or feature selection done globally *before* running this tool can leak information even when the benchmark's internal splits are correct. See [methods](docs/METHODS.md).
+
+## Repository layout
+
+- `src/donorshift/` — loaders, training-only transforms, models, benchmarks and reports
+- `tests/` — regression tests, data checks, donor isolation and split comparison checks
+- `examples/data/` — synthetic raw counts, not patient data
+- `examples/results/` — example LODO and split-comparison outputs
+- `docs/` — methods and public-data instructions
+
+## License
+
+MIT. See [LICENSE](LICENSE).

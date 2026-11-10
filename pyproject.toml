@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "donorshift-bench"
-version = "0.1.0"
+version = "0.2.0"
 description = "Leakage-aware leave-one-donor-out cell-type classification benchmark for single-cell counts"
 readme = "README.md"
 requires-python = ">=3.10"
