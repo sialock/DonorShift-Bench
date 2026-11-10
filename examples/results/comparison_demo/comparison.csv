@@ -1,0 +1,3 @@
+model,donor_held_out_accuracy,random_cell_accuracy,random_minus_held_out,random_replicate_sd,lodo_worst_donor_accuracy,random_worst_donor_accuracy,lodo_mean_donor_macro_f1,random_mean_donor_macro_f1
+logreg,0.614583,0.516667,-0.097917,0.083229,0.500000,0.300000,0.622450,0.495375
+random_forest,0.713542,0.608333,-0.105208,0.031458,0.500000,0.400000,0.718647,0.595516

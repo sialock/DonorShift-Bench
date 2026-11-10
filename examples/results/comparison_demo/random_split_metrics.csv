@@ -1,0 +1,7 @@
+repeat,model,split_seed,n_train_cells,n_test_cells,n_train_donors,n_test_donors,n_overlapping_donors,mean_donor_accuracy,worst_donor_accuracy,mean_donor_macro_f1_present,pooled_cell_accuracy
+0,logreg,42,304,80,8,8,8,0.475000,0.300000,0.472842,0.475000
+0,random_forest,42,304,80,8,8,8,0.612500,0.400000,0.630630,0.612500
+1,logreg,100045,304,80,8,8,8,0.612500,0.500000,0.574073,0.612500
+1,random_forest,100045,304,80,8,8,8,0.637500,0.500000,0.626894,0.637500
+2,logreg,200048,304,80,8,8,8,0.462500,0.100000,0.439211,0.462500
+2,random_forest,200048,304,80,8,8,8,0.575000,0.300000,0.529025,0.575000

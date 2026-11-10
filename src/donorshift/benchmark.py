@@ -1,5 +1,4 @@
 """End-to-end evaluation with donor-separated folds and fit-on-train transforms."""
-import hashlib
 import json
 import platform
 from datetime import datetime, timezone
@@ -16,6 +15,7 @@ from .data import load, take_rows
 from .models import AVAILABLE, predict_model
 from .preprocess import TrainOnlyHVG
 from .report import make_report
+from .utils import sha256_file
 
 
 def _bootstrap_mean_ci(values, rng, n_bootstraps=1000):
@@ -113,7 +113,7 @@ def benchmark(input_path, output_dir, models=('logreg', 'random_forest'),
             mean_donor_macro_f1_present=float(donor_subset.macro_f1_present.mean()),
             pooled_cell_accuracy=float(pred_subset.correct.mean()),
             bootstrap_95pct_interval_mean_donor_accuracy=[ci_lo, ci_hi])
-    sha = hashlib.sha256(input_path.read_bytes()).hexdigest()
+    sha = sha256_file(input_path)
     summary = dict(schema_version='1', project='DonorShift-Bench', version=__version__,
                    generated_utc=datetime.now(timezone.utc).isoformat(),
                    input_file=input_path.name, input_sha256=sha,

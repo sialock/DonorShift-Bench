@@ -20,3 +20,5 @@ jobs:
       - run: python -m build
       - run: donorshift make-demo --output /tmp/synthetic_sc_counts.csv --donors 4 --cells-per-donor 16 --genes 32
       - run: donorshift run --input /tmp/synthetic_sc_counts.csv --output /tmp/donor_result --models logreg --top-genes 16 --bootstrap 100
+      - run: donorshift compare --input /tmp/synthetic_sc_counts.csv --output /tmp/comparison_result --models logreg --top-genes 16 --bootstrap 100 --random-repeats 2 --dataset-kind synthetic
+      - run: test -s /tmp/comparison_result/comparison.csv

@@ -1,0 +1,50 @@
+{
+  "schema_version": "2",
+  "project": "DonorShift-Bench",
+  "version": "0.2.0",
+  "dataset_kind": "synthetic",
+  "accession": null,
+  "input_sha256": "24c43f8387690d58e4d83bc22bd2fcdb565fdf9db17f99de34303821701b5edf",
+  "n_cells": 384,
+  "n_genes": 64,
+  "n_donors": 8,
+  "n_cell_types": 4,
+  "average_lodo_train_cells": 336.0,
+  "average_random_train_cells": 304.0,
+  "random_actual_test_fraction": 0.20833333333333334,
+  "models": [
+    "logreg",
+    "random_forest"
+  ],
+  "seed": 42,
+  "random_repeats": 3,
+  "random_test_fraction_requested": 0.2,
+  "lodo_evaluation": "leave-one-donor-out",
+  "random_evaluation": "within-donor cell split; train and test donors overlap by design",
+  "preprocessing": "HVG detection and selection on training cells only, then independent total-count normalization",
+  "interpretation": "Random-minus-held-out difference is descriptive. Different training sizes, test composition and donor overlap prevent causal interpretation.",
+  "comparisons": [
+    {
+      "model": "logreg",
+      "donor_held_out_accuracy": 0.6145833333333334,
+      "random_cell_accuracy": 0.5166666666666666,
+      "random_minus_held_out": -0.09791666666666676,
+      "random_replicate_sd": 0.08322910148099236,
+      "lodo_worst_donor_accuracy": 0.5,
+      "random_worst_donor_accuracy": 0.3,
+      "lodo_mean_donor_macro_f1": 0.6224497630703418,
+      "random_mean_donor_macro_f1": 0.4953753807920474
+    },
+    {
+      "model": "random_forest",
+      "donor_held_out_accuracy": 0.7135416666666666,
+      "random_cell_accuracy": 0.6083333333333333,
+      "random_minus_held_out": -0.10520833333333335,
+      "random_replicate_sd": 0.0314576434802948,
+      "lodo_worst_donor_accuracy": 0.5,
+      "random_worst_donor_accuracy": 0.39999999999999997,
+      "lodo_mean_donor_macro_f1": 0.7186472765504723,
+      "random_mean_donor_macro_f1": 0.5955161736411737
+    }
+  ]
+}

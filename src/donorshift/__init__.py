@@ -1,2 +1,3 @@
-"""DonorShift-Bench: strictly donor-held-out single-cell benchmarking."""
-__version__ = "0.1.0"
+"""Leakage-aware evaluation of single-cell labels across donors."""
+
+__version__ = "0.2.0"
