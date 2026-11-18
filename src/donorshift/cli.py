@@ -3,6 +3,7 @@ import argparse
 import json
 import sys
 
+from . import __version__
 from .benchmark import benchmark
 from .compare import compare_protocols
 from .data import load
@@ -13,6 +14,7 @@ from .synthetic import save_synthetic
 def build_parser():
     parser = argparse.ArgumentParser(prog='donorshift',
         description='Patient/donor-held-out scRNA cell-type benchmark with train-only preprocessing')
+    parser.add_argument('--version', action='version', version=f'%(prog)s {__version__}')
     sub = parser.add_subparsers(dest='command', required=True)
     demo = sub.add_parser('make-demo', help='Generate entirely synthetic example raw counts')
     demo.add_argument('--output', default='examples/data/synthetic_sc_counts.csv')

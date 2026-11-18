@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.2.1 — 2026-11-18
+
+- Added `donorshift --version` to check the installed version from the command line.
+
 ## 0.2.0 — 2026-11-10
 
 - Added `donorshift compare`: a repeated within-donor cell split alongside the leave-one-donor-out benchmark.

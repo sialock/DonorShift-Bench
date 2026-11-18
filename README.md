@@ -20,6 +20,7 @@ Python 3.10 or newer is required.
 git clone https://github.com/sialock/DonorShift-Bench.git
 cd DonorShift-Bench
 python -m pip install -e .
+donorshift --version
 ```
 
 To run the tests:
